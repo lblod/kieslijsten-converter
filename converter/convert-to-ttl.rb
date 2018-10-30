@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 # coding: utf-8
 
+STDOUT.sync = true
 require 'csv'
 require 'linkeddata'
 require 'date'
@@ -268,11 +269,13 @@ class Converter
         unless persoon
           begin
             geboortedatum = Date.strptime(row["geboortedatum"], "%m/%d/%Y")
-          rescue StandardError => e
+          rescue
             log.info "invalid date #{row["geboortedatum"]} for rrn: #{row["RR"]}, row: #{index} "
             geboortedatum = nil
           end
-          begin
+          unless row['Rrvoornaam']
+            log.info "missing Rrvoornaam for rrn: #{row["RR"]}, row: #{index}"
+          end
           ( persoon, triples, sensitive_triples ) = mdb.create_person( rrn:row['RR'],
                                                                        voornaam: row['Rrvoornaam'],
                                                                        achternaam: row['RRachternaam'],
@@ -281,23 +284,18 @@ class Converter
                                                                      )
           rrn_graph << sensitive_triples
           repository.write(triples.dump(:ttl))
-          lijst = lijsten["#{row["kieskring"]}-#{row["lijstnr"]}"]
-          gevolg = gevolg(row)
-          rangorde = rangorde(row)
-          (resultaat, triples ) = mdb.create_resultaat(persoon: persoon,
-                                                       lijst: lijst,
-                                                       naamstemmen: Integer(row["naamstemmen"]),
-                                                       gevolg: gevolg,
-                                                       rangorde: rangorde
-                                                      )
-          triples << [ lijst, ::MandatenDb::MANDAAT.heeftKandidaat, persoon ]
-          repository.write(triples.dump(:ttl))
-          rescue StandardError => e
-            log.error e
-            log.error "failed to parse row #{index}"
-            log.info row.inspect
-          end
         end
+        lijst = lijsten["#{row["kieskring"]}-#{row["lijstnr"]}"]
+        gevolg = gevolg(row)
+        rangorde = rangorde(row)
+        (resultaat, triples ) = mdb.create_resultaat(persoon: persoon,
+                                                     lijst: lijst,
+                                                     naamstemmen: Integer(row["naamstemmen"]),
+                                                     gevolg: gevolg,
+                                                     rangorde: rangorde
+                                                    )
+        triples << [ lijst, ::MandatenDb::MANDAAT.heeftKandidaat, persoon ]
+        repository.write(triples.dump(:ttl))
       end
     end
     write_ttl_to_file('personen-sensitive') do |repository|
