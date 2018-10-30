@@ -177,6 +177,7 @@ class MandatenDb
     triples << RDF.Statement(iri, RDF.type, MANDAAT.Verkiezingsresultaat)
     triples << RDF.Statement(iri, MU.uuid, uuid)
     triples << RDF.Statement(iri, MANDAAT.aantalNaamstemmen, naamstemmen)
+    triples << RDF.Statement(iri, MANDAAT.gevolg, gevolg)
     if rangorde
       triples << RDF.Statement(iri, MANDAAT.plaatsRangorde, rangorde)
     end
@@ -268,8 +269,7 @@ class Converter
           begin
             geboortedatum = Date.strptime(row["geboortedatum"], "%m/%d/%Y")
           rescue StandardError => e
-            log.info "invalid date #{row["geboortedatum"]}"
-            log.info row.inspect
+            log.info "invalid date #{row["geboortedatum"]} for rrn: #{row["RR"]}, row: #{index} "
             geboortedatum = nil
           end
           begin
