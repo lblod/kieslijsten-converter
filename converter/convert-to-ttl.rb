@@ -98,7 +98,7 @@ class MandatenDb
     result = query(%(
       PREFIX adms:<http://www.w3.org/ns/adms#>
       PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
-      SELECT ?person
+      SELECT ?person ?identifier
       WHERE {
         ?person adms:identifier ?identifier.
         ?identifier skos:notation "#{rrn}".
@@ -106,7 +106,7 @@ class MandatenDb
 
     ))
     if result.size == 1
-      result[0][:person]
+      [result[0][:person], result[0][:identifier]]
     else
       nil
     end
@@ -145,17 +145,66 @@ class MandatenDb
     end
   end
 
-  def create_person( rrn:, voornaam:, achternaam:, geslacht: , geboortedatum: )
+  def update_person(person:, voornaam:, achternaam: ,geslacht: , geboortedatum:, uuid:)
+    triples = RDF::Repository.new
+    triples << [ person, RDF.type, PERSON.Person ]
+    triples << [ person, MU.uuid, uuid ]
+    if voornaam
+      triples << [ person, PERSOON.gebruikteVoornaam , voornaam ]
+    end
+    triples << [ person, FOAF.familyName , achternaam ]
+    if geboortedatum
+      (birthdate_iri, birthdate_triples) = birthdate(geboortedatum)
+      triples << [ person, PERSOON.heeftGeboorte, birthdate_iri ]
+      triples << birthdate_triples
+    end
+    if (geslacht.kind_of?(RDF::URI))
+      triples << [ person, PERSOON.geslacht, geslacht ]
+    else
+      triples << [ person, PERSOON.geslacht, geslacht(geslacht) ]
+    end
+    triples
+  end
+
+  def fetch_person_details(person)
+   result =  query(%(
+          PREFIX foaf:    <http://xmlns.com/foaf/0.1/>
+          PREFIX persoon: <http://data.vlaanderen.be/ns/persoon#>
+          PREFIX skos:    <http://www.w3.org/2004/02/skos/core#>
+          PREFIX mu:      <http://mu.semte.ch/vocabularies/core/>
+          SELECT ?voornaam ?achternaam ?geboortedatum ?geslacht ?uuid
+          WHERE {
+             OPTIONAL { <#{person.value}> foaf:familyName ?achternaam. }
+             OPTIONAL { <#{person.value}> persoon:gebruikteVoornaam ?voornaam. }
+             OPTIONAL { <#{person.value}> mu:uuid ?uuid. }
+             OPTIONAL { <#{person.value}> persoon:geslacht ?geslacht. }
+             OPTIONAL { <#{person.value}> persoon:heeftGeboorte/persoon:datum ?geboortedatum. }
+          }
+   ))
+   if result.size === 1
+     result[0]
+   else
+     { voornaam: nil, achternaam: nil, geslacht:nil, geboortedatum: nil, uuid: nil}
+   end
+  end
+
+  def create_identifier(rrn)
+    identifier_uuid = SecureRandom.uuid
+    identifier = RDF::URI.new("#{BASE_IRI}/identificatoren/#{identifier_uuid}")
+    sensitive_triples = RDF::Repository.new
+    sensitive_triples << [ identifier, RDF.type, ADMS.Identifier ]
+    sensitive_triples << [ identifier, SKOS.notation, rrn ]
+    sensitive_triples << [ identifier, MU.uuid, identifier_uuid ]
+    [identifier, sensitive_triples]
+  end
+
+  def create_person( identifier:, voornaam:, achternaam:, geslacht: , geboortedatum: )
     sensitive_triples = RDF::Repository.new
     triples = RDF::Repository.new
     person_uuid = SecureRandom.uuid
     person = RDF::URI.new("#{BASE_IRI}/personen/#{person_uuid}")
-    identifier_uuid = SecureRandom.uuid
-    identifier = RDF::URI.new("#{BASE_IRI}/identificatoren/#{identifier_uuid}")
+
     sensitive_triples << [ person, ADMS.identifier, identifier ]
-    sensitive_triples << [ identifier, RDF.type, ADMS.Identifier ]
-    sensitive_triples << [ identifier, SKOS.notation, rrn ]
-    sensitive_triples << [ identifier, MU.uuid, identifier_uuid ]
     triples << [ person, RDF.type, PERSON.Person ]
     triples << [ person, MU.uuid, person_uuid ]
     if voornaam
@@ -265,18 +314,36 @@ class Converter
     rrn_graph = RDF::Repository.new
     write_ttl_to_file('personen') do |repository|
       read_csv(File.join(input_path,'kandidaten.csv')) do |index, row|
-        persoon = mdb.find_person(row['RR'])
-        unless persoon
-          begin
-            geboortedatum = Date.strptime(row["geboortedatum"], "%m/%d/%Y")
-          rescue
-            log.info "invalid date #{row["geboortedatum"]} for rrn: #{row["RR"]}, row: #{index} "
-            geboortedatum = nil
-          end
-          unless row['Rrvoornaam']
-            log.info "missing Rrvoornaam for rrn: #{row["RR"]}, row: #{index}"
-          end
-          ( persoon, triples, sensitive_triples ) = mdb.create_person( rrn:row['RR'],
+        (persoon, identifier) = mdb.find_person(row['RR'])
+        unless identifier
+          (identifier, sensitive_triples) = mdb.create_identifier(row['RR'])
+          repository.write(sensitive_triples.dump(:ttl))
+        end
+        begin
+          geboortedatum = Date.strptime(row["geboortedatum"], "%m/%d/%Y")
+        rescue
+          log.info "invalid date #{row["geboortedatum"]} for rrn: #{row["RR"]}, row: #{index} "
+          geboortedatum = nil
+        end
+        unless row['Rrvoornaam']
+          log.info "missing Rrvoornaam for rrn: #{row["RR"]}, row: #{index}"
+        end
+        if persoon
+          gegevens = mdb.fetch_person_details(persoon)
+          voornaam = gegevens[:voornaam] ? gegevens[:voornaam] : row['Rrvoornaam']
+          achternaam = gegevens[:achternaam] ? gegevens[:achternaam] : row['RRachternaam']
+          geslacht = gegevens[:geslacht] ? gegevens[:geslacht] : row['geslacht']
+          geboortedatum = gegevens[:geboortedatum] ? gegevens[:geboortedatum] : geboortedatum
+          uuid = gegevens[:uuid] ? gegevens[:uuid] : persoon.value.sub("#{::MandatenDb::BASE_IRI}/personen/","")
+          triples = mdb.update_person(person: persoon,
+                            voornaam: voornaam,
+                            achternaam: achternaam,
+                            geslacht: geslacht,
+                            geboortedatum: geboortedatum,
+                            uuid: uuid)
+          repository.write(triples.dump(:ttl))
+        else
+          ( persoon, triples, sensitive_triples ) = mdb.create_person( identifier: identifier,
                                                                        voornaam: row['Rrvoornaam'],
                                                                        achternaam: row['RRachternaam'],
                                                                        geslacht: row['geslacht'],
