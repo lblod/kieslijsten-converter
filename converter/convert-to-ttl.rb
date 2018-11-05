@@ -79,6 +79,7 @@ class MandatenDb
     graph << [iri, MU.uuid, uuid]
     graph << [iri, MANDAAT.behoortTot,behoortTot]
     graph << [iri, MANDAAT.lijsttype, lijsttype]
+    graph << [iri, MANDAAT.lijstnr, lijstnr]
     graph << [iri, SKOS.prefLabel, lijstnaam]
     [iri, graph]
   end
@@ -375,7 +376,7 @@ class Converter
     verkiezing_cache = {}
     kieslijsten = {}
     write_ttl_to_file('rechtstreekse-verkiezingen-en-kandidatenlijsten') do |repository|
-      read_csv(File.join(input_path,'kandidaten.csv')) do |index, row|
+      read_csv(File.join(input_path,'lijsten.csv')) do |index, row|
         gemeentenaam = row["kieskring"]
         lijsttype = RDF::URI.new(lijsttype_iri)
         orgaantype = RDF::URI.new(bestuursorgaan_iri)
@@ -454,3 +455,4 @@ converter.run_data_transforms
 kieslijsten = converter.parse_kieslijsten(ENV['KANDIDATENLIJST_TYPE_IRI'], ENV['BESTUURSORGAAN_TYPE_IRI'], ENV['ORGAAN_START_DATUM'])
 converter.parse_kandidaten(kieslijsten)
 
+rr
