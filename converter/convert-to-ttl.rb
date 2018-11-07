@@ -318,7 +318,7 @@ class Converter
         (persoon, identifier) = mdb.find_person(row['RR'])
         unless identifier
           (identifier, sensitive_triples) = mdb.create_identifier(row['RR'])
-          repository.write(sensitive_triples.dump(:ttl))
+          rrn_graph << sensitive_triples
         end
         begin
           geboortedatum = Date.strptime(row["geboortedatum"], "%m/%d/%Y")
