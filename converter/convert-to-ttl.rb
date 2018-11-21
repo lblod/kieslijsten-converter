@@ -2,6 +2,7 @@
 # coding: utf-8
 
 STDOUT.sync = true
+
 require 'csv'
 require 'linkeddata'
 require 'date'
@@ -27,6 +28,7 @@ class MandatenDb
   BASE_IRI='http://data.lblod.info/id'
 
   attr_reader :client, :log
+
   def initialize(endpoint, log)
     @client = SPARQL::Client.new(endpoint)
     @log = log
@@ -36,6 +38,7 @@ class MandatenDb
     log.debug q
     @client.query(q)
   end
+
   def bestuursorgaan_voor_gemeentenaam(naam, type, date)
     @bestuursorgaan_cache ||= {}
     orgaan = @bestuursorgaan_cache.dig(naam, type, date)
@@ -69,7 +72,27 @@ class MandatenDb
     @bestuursorgaan_cache[naam][type][date]
   end
 
-
+  def update_kandidatenlijst(lijstnaam:, lijstnr:, behoortTot:, lijsttype:)
+    res = query(%(
+          PREFIX org: <http://www.w3.org/ns/org#>
+          PREFIX mandaat: <http://data.vlaanderen.be/ns/mandaat#>
+          PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
+          SELECT ?iri
+          WHERE {
+                ?iri a mandaat:Kandidatenlijst;
+                   mandaat:behoortTot <#{behoortTot}>;
+                   mandaat:lijsttype <#{lijsttype}>;
+                   skos:prefLabel "#{lijstnaam}".
+          }
+    ))
+    repo = RDF::Graph.new
+    if res.size == 1
+      repo << [ res[0][:iri], MANDAAT.lijstnummer, lijstnr ]
+    else
+      log.warn "no result found for #{lijstnaam} #{behoortTot}"
+    end
+    repo
+  end
 
   def create_kandidatenlijst(lijstnaam:, lijstnr:, lijsttype:, behoortTot: )
     graph = RDF::Repository.new
@@ -82,6 +105,25 @@ class MandatenDb
     graph << [iri, MANDAAT.lijstnr, lijstnr]
     graph << [iri, SKOS.prefLabel, lijstnaam]
     [iri, graph]
+  end
+
+  def find_verkiezing(date, orgaan)
+    res = query(%(
+          PREFIX org: <http://www.w3.org/ns/org#>
+          PREFIX mandaat: <http://data.vlaanderen.be/ns/mandaat#>
+          PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
+          SELECT ?iri
+          WHERE {
+                ?iri a mandaat:RechtstreekseVerkiezing;
+                   mandaat:datum "#{date}"^^xsd:date;
+                   mandaat:steltSamen <#{orgaan}>.
+          }
+   ))
+    if res.size == 1
+      res[0][:iri].value
+    else
+      log.warn "no rechtstreekse verkiezing found for #{orgaan} and #{date}"
+    end
   end
 
   def create_rechtstreekse_verkiezing(datum:, geldigheid: nil, stelt_samen:)
@@ -240,7 +282,7 @@ end
 
 class Converter
   attr_reader :log, :client, :mdb, :output_path, :input_path, :transform_path, :input_date_format
-  def initialize(endpoint: , transform_path: , input_path:, output_path:, input_date_format:, log_level: "info")
+  def initialize(endpoint: , transform_path: , input_path:, output_path:, input_date_format:, log_level: "info", provincie: false)
     @endpoint = endpoint
     @client = SPARQL::Client.new(endpoint)
     @input_path = input_path
@@ -250,6 +292,7 @@ class Converter
     @log.level = log_level == "info" ? Logger::INFO : Logger::DEBUG
     @input_date_format = input_date_format
     @mdb = MandatenDb.new(endpoint, @log)
+    @provincie = provincie
   end
 
   def run_data_transforms
@@ -353,21 +396,60 @@ class Converter
           rrn_graph << sensitive_triples
           repository.write(triples.dump(:ttl))
         end
-        lijst = lijsten["#{row["kieskring"]}-#{row["lijstnr"]}"]
-        gevolg = gevolg(row)
-        rangorde = rangorde(row)
-        (resultaat, triples ) = mdb.create_resultaat(persoon: persoon,
-                                                     lijst: lijst,
-                                                     naamstemmen: Integer(row["naamstemmen"]),
-                                                     gevolg: gevolg,
-                                                     rangorde: rangorde
-                                                    )
-        triples << [ lijst, ::MandatenDb::MANDAAT.heeftKandidaat, persoon ]
-        repository.write(triples.dump(:ttl))
+        begin
+          lijst = @provincie ? lijsten["#{provincie(row["kieskring"])}-#{row["kieskring"]}-#{row["lijstnr"]}"] : lijsten["#{row["kieskring"]}-#{row["lijstnr"]}"]
+          log.debug lijst
+          gevolg = gevolg(row)
+          rangorde = rangorde(row)
+          (resultaat, triples ) = mdb.create_resultaat(persoon: persoon,
+                                                       lijst: lijst,
+                                                       naamstemmen: Integer(row["naamstemmen"]),
+                                                       gevolg: gevolg,
+                                                       rangorde: rangorde
+                                                      )
+          triples << [ lijst, ::MandatenDb::MANDAAT.heeftKandidaat, persoon ]
+          repository.write(triples.dump(:ttl))
+        rescue StandardError => e
+          log.error e.message
+          log.warn "skipping row with nis code #{row["kieskring"]} and index {#{index}}"
+        end
       end
     end
     write_ttl_to_file('personen-sensitive') do |repository|
       repository.write(rrn_graph.dump(:ttl))
+    end
+  end
+
+  def update_kieslijsten(lijsttype_iri, bestuursorgaan_iri, orgaan_start_datum)
+    wait_for_db
+    lijsttype = RDF::URI.new(lijsttype_iri)
+    orgaantype = RDF::URI.new(bestuursorgaan_iri)
+    write_ttl_to_file('lijst_nr') do |repository|
+      read_csv(File.join(input_path,'lijsten.csv')) do |index, row|
+        gemeentenaam = row["kieskring"]
+        orgaan = mdb.bestuursorgaan_voor_gemeentenaam(gemeentenaam, orgaantype, orgaan_start_datum )
+        date =  Date.strptime(row["datum"], input_date_format)
+        verkiezing = mdb.find_verkiezing(date, orgaan)
+        triples = mdb.update_kandidatenlijst(lijstnaam: row["lijst"], behoortTot: verkiezing, lijsttype: lijsttype, lijstnr: row["lijstnr"])
+        repository.write triples.dump(:ttl)
+      end
+    end
+  end
+
+  def provincie(nis_code)
+    case nis_code[0]
+    when "1"
+      "Antwerpen"
+    when "2"
+      "Vlaams-Brabant"
+    when "3"
+      "West-Vlaanderen"
+    when "4"
+      "Oost-Vlaanderen"
+    when "7"
+      "Limburg"
+    else
+      raise "invalid nis code #{nis_code}"
     end
   end
 
@@ -377,10 +459,10 @@ class Converter
     kieslijsten = {}
     write_ttl_to_file('rechtstreekse-verkiezingen-en-kandidatenlijsten') do |repository|
       read_csv(File.join(input_path,'lijsten.csv')) do |index, row|
-        gemeentenaam = row["kieskring"]
-        lijsttype = RDF::URI.new(lijsttype_iri)
-        orgaantype = RDF::URI.new(bestuursorgaan_iri)
         begin
+          gemeentenaam = @provincie ? provincie(row['NIS']) : row["kieskring"]
+          lijsttype = RDF::URI.new(lijsttype_iri)
+          orgaantype = RDF::URI.new(bestuursorgaan_iri)
           orgaan = mdb.bestuursorgaan_voor_gemeentenaam(gemeentenaam, orgaantype, orgaan_start_datum )
           date =  Date.strptime(row["datum"], input_date_format)
           if verkiezing_cache[orgaan]
@@ -391,13 +473,17 @@ class Converter
             verkiezing_cache[orgaan]=verkiezing
           end
           ( lijst, graph ) = mdb.create_kandidatenlijst(lijstnaam: row["lijst"], lijstnr: row["lijstnr"], lijsttype: lijsttype, behoortTot: verkiezing)
-          kieslijsten["#{gemeentenaam}-#{row["lijstnr"]}"]=lijst
+          kieslijsten["#{gemeentenaam}-#{@provincie ? "#{row["NIS"]}-" : ""}#{row["lijstnr"]}"]=lijst
+          if @provincie
+            graph << [ lijst, MandatenDb::EXT.provinciedistrict, row["kieskring"] ]
+          end
           repository.write(graph.dump(:ttl))
         rescue StandardError => e
           log.warn "skipping row #{index}: #{e.message}"
         end
       end
     end
+    puts kieslijsten.inspect
     kieslijsten
   end
 
@@ -449,10 +535,11 @@ converter = Converter.new(
   output_path: '/data/output',
   transform_path: '/data/transforms',
   input_date_format: ENV['INPUT_DATE_FORMAT'],
-  log_level: ENV['LOG_LEVEL']
+  log_level: ENV['LOG_LEVEL'],
+  provincie: true
 )
 converter.run_data_transforms
 kieslijsten = converter.parse_kieslijsten(ENV['KANDIDATENLIJST_TYPE_IRI'], ENV['BESTUURSORGAAN_TYPE_IRI'], ENV['ORGAAN_START_DATUM'])
 converter.parse_kandidaten(kieslijsten)
+#converter.update_kieslijsten(ENV['KANDIDATENLIJST_TYPE_IRI'], ENV['BESTUURSORGAAN_TYPE_IRI'], ENV['ORGAAN_START_DATUM'])
 
-rr

@@ -1,7 +1,7 @@
 version: '3.4'
 services:
   database:
-    image: tenforce/virtuoso:1.3.2-virtuoso7.2.5.1
+    image: tenforce/virtuoso
     environment:
       SPARQL_UPDATE: "true"
       DEFAULT_GRAPH: "http://mu.semte.ch/application"
@@ -13,12 +13,11 @@ services:
     build: ./converter
     environment:
       ENDPOINT: 'http://database:8890/sparql'
-      KANDIDATENLIJST_TYPE_IRI: 'http://data.vlaanderen.be/id/concept/KandidatenlijstLijsttype/95de36e5-8c7a-4308-af7b-75afbd943dd2' # gemeenteraadsverkiezingen
-      BESTUURSORGAAN_TYPE_IRI: 'http://data.vlaanderen.be/id/concept/BestuursorgaanClassificatieCode/5ab0e9b8a3b2ca7c5e000005'  # gemeenteraad
+      KANDIDATENLIJST_TYPE_IRI: 'http://data.vlaanderen.be/id/concept/KandidatenlijstLijsttype/90e3b7d0-2fae-43a1-957e-6daa8d072be1' # provincieraad
+      BESTUURSORGAAN_TYPE_IRI: 'http://data.vlaanderen.be/id/concept/BestuursorgaanClassificatieCode/5ab0e9b8a3b2ca7c5e00000c' # provincieraad
       ORGAAN_START_DATUM: '2019-01-01'
       LOG_LEVEL: 'info'
     volumes:
-      - './data/input:/data/input'
+      - './data/input-provincies:/data/input'
       - './data/output:/data/output'
       - './data/transforms:/data/transforms'
-
