@@ -37,3 +37,10 @@ the end result will be available in ./data/output/
 * sensitive data will be written to ./data/output/[date]-[type]-sensitive.ttl
 * other data will be written to ./data/output/[date]-[type].ttl
 
+
+## extra scripts
+- create-fusiegemeenten.rb
+
+#### import-burgemeester.rb
+```ENDPOINT=http://localhost:8890/sparql ruby import-burgemeester.rb```
+needs a burgemeesters2019.csv on the same path and a endpoint with all data from editor (including identifiers)
