@@ -119,7 +119,7 @@ class MandatenDb
     if result.size > 0
       [result[0][:person], result[0][:identifier]]
     else
-      raise "person not found"
+      raise "person with rrn #{rrn} not found"
     end
   end
   def find_mandaat(orgaan, type)
