@@ -138,7 +138,7 @@ class MandatenDb
     end
   end
 
-  def create_mandataris(persoon, mandaat, datum)
+  def create_mandataris(persoon, mandaat, datum, status)
     graph = RDF::Repository.new
     uuid = SecureRandom.uuid
     iri = RDF::URI.new("#{BASE_IRI}/mandatarissen/#{uuid}")
@@ -147,6 +147,7 @@ class MandatenDb
     graph << [ iri, ORG.holds, mandaat ]
     graph << [ iri, MANDAAT.start, Date.strptime(datum, "%m/%d/%Y")]
     graph << [ iri, MANDAAT.isBestuurlijkeAliasVan, persoon]
+    graph << [ iri, MANDAAT.status, status]
     [graph, iri]
   end
   def mandataris_exists(orgaan, type)
@@ -177,7 +178,8 @@ mdb.write_ttl_to_file("burgemeesters") do |file|
           puts "creating burgemeester voor #{gemeentenaam}"
           (persoon, identifier) = mdb.find_person(row['RR'])
           burgemeester = mdb.find_mandaat(orgaan, burgemeesterRole)
-          (mandataris, iri) = mdb.create_mandataris(persoon, burgemeester, datum)
+          status = RDF::URI.new("http://data.vlaanderen.be/id/concept/MandatarisStatusCode/21063a5b-912c-4241-841c-cc7fb3c73e75")
+          (mandataris, iri) = mdb.create_mandataris(persoon, burgemeester, datum, status)
         end
         file.write mandataris.dump(:ttl)
       end
