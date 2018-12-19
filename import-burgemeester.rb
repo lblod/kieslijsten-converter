@@ -166,19 +166,25 @@ end
 mdb = MandatenDb.new(ENV['ENDPOINT'])
 orgaantype=RDF::URI.new('http://data.vlaanderen.be/id/concept/BestuursorgaanClassificatieCode/4955bd72cd0e4eb895fdbfab08da0284') # burgemeester
 burgemeesterRole="http://data.vlaanderen.be/id/concept/BestuursfunctieCode/5ab0e9b8a3b2ca7c5e000013"
+mandataris_statussen = {
+  "burgemeester" =>  RDF::URI.new("http://data.vlaanderen.be/id/concept/MandatarisStatusCode/21063a5b-912c-4241-841c-cc7fb3c73e75"),
+  "waarnemend burgemeester" => RDF::URI.new("http://data.vlaanderen.be/id/concept/MandatarisStatusCode/e1ca6edd-55e1-4288-92a5-53f4cf71946a"),
+  "titel voerend burgemeester" => RDF::URI.new("http://data.vlaanderen.be/id/concept/MandatarisStatusCode/aacb3fed-b51d-4e0b-a411-f3fa641da1b3")
+
+}
 mdb.write_ttl_to_file("burgemeesters") do |file|
   mdb.read_csv('burgemeesters2019.csv') do |index, row|
     begin
       gemeentenaam = row["kieskring"]
       datum = row["datum eedaflegging"]
       rol = row["Mandaat"]
-      if rol.downcase == "burgemeester" and not (datum.nil? || datum.empty?)
+      if mandataris_statussen.keys.include?(rol.downcase) and not (datum.nil? || datum.empty?)
         orgaan = mdb.bestuursorgaan_voor_gemeentenaam(gemeentenaam, orgaantype, "2019-01-01" )
         unless mdb.mandataris_exists(orgaan, burgemeesterRole)
           puts "creating burgemeester voor #{gemeentenaam}"
           (persoon, identifier) = mdb.find_person(row['RR'])
           burgemeester = mdb.find_mandaat(orgaan, burgemeesterRole)
-          status = RDF::URI.new("http://data.vlaanderen.be/id/concept/MandatarisStatusCode/21063a5b-912c-4241-841c-cc7fb3c73e75")
+          status = mandataris_statussen[rol.downcase]
           (mandataris, iri) = mdb.create_mandataris(persoon, burgemeester, datum, status)
         end
         file.write mandataris.dump(:ttl)
