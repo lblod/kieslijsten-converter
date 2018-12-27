@@ -146,7 +146,9 @@ class MandatenDb
   def update_mandataris(mandataris, existing_info, new_info)
     graph = RDF::Repository.new
     new_info.each do |key, value|
-      if not existing_info.key?(key) and new_info[key]
+      if (not existing_info.key?(key)) and new_info[key]
+        log.warn(key)
+        log.warn(existing_info.inspect)
         graph << [ mandataris, new_info[key][:iri], new_info[key][:value]]
       end
     end
@@ -253,15 +255,15 @@ mdb.write_ttl_to_file("burgemeesters") do |file|
           result = mdb.find_mandataris(orgaan, burgemeesterRole)
           new_info = {}
           if datum_eed
-            new_info["datumEedaflegging"] = {iri: MandatenDb::EXT.datumEedaflegging , value: Date.strptime(datum_eed, "%m/%d/%Y")}
+            new_info[:datumEedaflegging] = {iri: MandatenDb::EXT.datumEedaflegging , value: Date.strptime(datum_eed, "%m/%d/%Y")}
           end
           if datum_besluit
-            new_info["datumMinistrieelBesluit"]= {iri: MandatenDb::EXT.datumMinistrieelBesluit , value: Date.strptime(datum_besluit, "%m/%d/%Y")}
+            new_info[:datumMinistrieelBesluit]= {iri: MandatenDb::EXT.datumMinistrieelBesluit , value: Date.strptime(datum_besluit, "%m/%d/%Y")}
           end
           if datum_start
-            new_info["start"]= {iri: MandatenDb::MANDAAT.start , value: Date.strptime(datum_start, "%m/%d/%Y")}
+            new_info[:start]= {iri: MandatenDb::MANDAAT.start , value: Date.strptime(datum_start, "%m/%d/%Y")}
           else
-            new_info["start"]= {iri: MandatenDb::MANDAAT.start , value: Date.strptime("1/1/2019", "%m/%d/%Y")}
+            new_info[:start]= {iri: MandatenDb::MANDAAT.start , value: Date.strptime("1/1/2019", "%m/%d/%Y")}
           end
           graph = mdb.update_mandataris(result["mandataris"], result.to_h, new_info)
           file.write graph.dump(:ttl)
