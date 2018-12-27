@@ -1,0 +1,21 @@
+version: '3.4'
+services:
+  database:
+    image: tenforce/virtuoso
+    environment:
+      SPARQL_UPDATE: "true"
+      DEFAULT_GRAPH: "http://mu.semte.ch/application"
+      BACKUP_PREFIX: "virtuoso_backup_181227T0330-"
+    volumes:
+      - ./data/db:/data
+    ports:
+      - "8890:8890"
+  burgemeesters:
+    build: ./
+    environment:
+      ENDPOINT: 'http://database:8890/sparql'
+      INPUT_PATH: '/data/input'
+      OUTPUT_PATH: '/data/output'
+    volumes:
+      - './data/input:/data/input'
+      - './data/output:/data/output'

@@ -104,7 +104,9 @@ class MandatenDb
         Lievegem: { gemeente: "0697609152", ocmw: "0697663986" },
         Pelt: { gemeente: "0697609350" , ocmw: "0697664976"},
         "Puurs-Sint-Amands": { gemeente: "0697609548" , ocmw: "0697665075"},
-        Oudsbergen: { gemeente: "0697609251" , ocmw: "0697664382"}
+        Oudsbergen: { gemeente: "0697609251" , ocmw: "0697664382"},
+        Deinze: { gemeente: "0697608162", ocmw: "0697663689"},
+        Aalter: { gemeente: "0697608063", ocmw: "0697663491"}
       }.each do |gemeente, codes|
         gemeente = gemeente.to_s
         (gebied, triples) = create_gebied(gemeente)
@@ -116,7 +118,7 @@ class MandatenDb
       end
     end
     end
-    
+
     def write_ttl_to_file(name)
     output = Tempfile.new(name)
     begin

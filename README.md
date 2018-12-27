@@ -39,8 +39,13 @@ the end result will be available in ./data/output/
 
 
 ## extra scripts
-- create-fusiegemeenten.rb
+#### create-fusiegemeenten.rb
+one off script to add some extra administrative units and organs.
 
 #### import-burgemeester.rb
-```ENDPOINT=http://localhost:8890/sparql ruby import-burgemeester.rb```
-needs a burgemeesters2019.csv on the same path and a endpoint with all data from editor (including identifiers)
+This script needs a `burgemeesters2019.csv` in `burgmeesters/data/input` and a (recent) backup to restore in `burgemeesters/data/db/backups`. The correct prefix needs to be set in docker-compose.yml. Output will be written to `burgmeesters/data/output`, it's a  ttl that has the new `mandatarissen`. Errors are logged to stdout.
+
+```
+cd burgmeesters
+docker-compose up
+```

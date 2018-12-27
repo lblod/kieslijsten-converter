@@ -1,5 +1,8 @@
 #!/usr/bin/env ruby
 # coding: utf-8
+
+STDOUT.sync = true
+
 require 'linkeddata'
 require 'date'
 require 'securerandom'
@@ -25,9 +28,11 @@ class MandatenDb
   BASE_IRI='http://data.lblod.info/id'
 
   def initialize(endpoint)
+    @endpoint = endpoint
     @client = SPARQL::Client.new(endpoint)
     @log = Logger.new(STDOUT)
     @log.level = Logger::INFO
+    wait_for_db
   end
 
   def write_ttl_to_file(name)
@@ -37,7 +42,7 @@ class MandatenDb
       yield output
       output.write "# finished #{name} at #{DateTime.now}"
       output.close
-      FileUtils.copy(output, File.join('./',"#{DateTime.now.strftime("%Y%m%d%H%M%S")}-#{name}.ttl"))
+      FileUtils.copy(output, File.join(ENV['OUTPUT_PATH'],"#{DateTime.now.strftime("%Y%m%d%H%M%S")}-#{name}.ttl"))
       output.unlink
     rescue StandardError => e
       puts e
@@ -138,18 +143,60 @@ class MandatenDb
     end
   end
 
-  def create_mandataris(persoon, mandaat, datum, status)
+  def update_mandataris(mandataris, existing_info, new_info)
+    graph = RDF::Repository.new
+    new_info.each do |key, value|
+      if not existing_info.key?(key) and new_info[key]
+        graph << [ mandataris, new_info[key][:iri], new_info[key][:value]]
+      end
+    end
+    graph
+  end
+
+  def create_mandataris(persoon, mandaat, status, datum_eed = nil, datum_start = nil, datum_besluit = nil)
     graph = RDF::Repository.new
     uuid = SecureRandom.uuid
     iri = RDF::URI.new("#{BASE_IRI}/mandatarissen/#{uuid}")
     graph << [ iri , RDF.type, MANDAAT.Mandataris ]
     graph << [ iri, MU.uuid, uuid ]
     graph << [ iri, ORG.holds, mandaat ]
-    graph << [ iri, MANDAAT.start, Date.strptime(datum, "%m/%d/%Y")]
+    graph << [ iri, EXT.datumEedaflegging, Date.strptime(datum_eed, "%m/%d/%Y")]
+    if datum_start
+      graph << [ iri, MANDAAT.start, Date.strptime(datum_start, "%m/%d/%Y")]
+    else
+      graph << [ iri, MANDAAT.start, Date.strptime("1/1/2019", "%m/%d/%Y")] # we can default to this according to V
+    end
+    if datum_besluit
+      graph << [ iri, EXT.datumMinistrieelBesluit, Date.strptime(datum_besluit, "%m/%d/%Y")]
+    end
     graph << [ iri, MANDAAT.isBestuurlijkeAliasVan, persoon]
     graph << [ iri, MANDAAT.status, status]
     [graph, iri]
   end
+
+  def find_mandataris(orgaan, type)
+    result = query(%(
+          PREFIX org: <http://www.w3.org/ns/org#>
+          PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
+          PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+          PREFIX mandaat: <http://data.vlaanderen.be/ns/mandaat#>
+           SELECT ?mandataris ?start ?datumEedaflegging ?datumMinistrieelBesluit ?status {
+               <#{orgaan.to_s}> org:hasPost ?mandaat.
+               ?mandaat org:role <#{type}>.
+               ?mandataris org:holds ?mandaat.
+               OPTIONAL { ?mandataris ext:datumEedaflegging ?datumEedaflegging}
+               OPTIONAL { ?mandataris mandaat:start ?start}
+               OPTIONAL { ?mandataris mandaat:status ?status}
+               OPTIONAL { ?mandataris ext:datumMinistrieelBesluit ?datumMinistrieelBesluit}
+    }))
+    if result.size == 1
+      return result[0]
+    else
+      log.error result.inspect
+      raise "number of mandatarissen found is not 1"
+    end
+  end
+
   def mandataris_exists(orgaan, type)
     query(%(
           PREFIX org: <http://www.w3.org/ns/org#>
@@ -160,6 +207,24 @@ class MandatenDb
                ?mandataris org:holds ?mandaat.
     }))
   end
+  def wait_for_db
+    until is_database_up?
+      log.info "Waiting for database... "
+      sleep 2
+    end
+
+    log.info "Database is up"
+  end
+  def is_database_up?
+    begin
+      location = URI(@endpoint)
+      response = Net::HTTP.get_response( location )
+      return response.is_a? Net::HTTPSuccess
+    rescue Errno::ECONNREFUSED
+      return false
+    end
+  end
+
 end
 
 
@@ -173,21 +238,40 @@ mandataris_statussen = {
 
 }
 mdb.write_ttl_to_file("burgemeesters") do |file|
-  mdb.read_csv('burgemeesters2019.csv') do |index, row|
+  mdb.read_csv(File.join(ENV['INPUT_PATH'],'burgemeesters2019.csv')) do |index, row|
     begin
       gemeentenaam = row["kieskring"]
-      datum = row["datum eedaflegging"]
+      datum_eed = row["datum eedaflegging"]
+      datum_besluit= row["datum besluit"]
+      datum_start = row["Datum start mandaat"]
       rol = row["Mandaat"]
-      if mandataris_statussen.keys.include?(rol.downcase) and not (datum.nil? || datum.empty?)
+      if rol and mandataris_statussen.keys.include?(rol.downcase) and not (datum_eed.nil? || datum_eed.empty?)
         orgaan = mdb.bestuursorgaan_voor_gemeentenaam(gemeentenaam, orgaantype, "2019-01-01" )
-        unless mdb.mandataris_exists(orgaan, burgemeesterRole)
+        status = mandataris_statussen[rol.downcase]
+        if mdb.mandataris_exists(orgaan, burgemeesterRole)
+          puts "updating burgemeester voor #{gemeentenaam} (additions only)"
+          result = mdb.find_mandataris(orgaan, burgemeesterRole)
+          new_info = {}
+          if datum_eed
+            new_info["datumEedaflegging"] = {iri: MandatenDb::EXT.datumEedaflegging , value: Date.strptime(datum_eed, "%m/%d/%Y")}
+          end
+          if datum_besluit
+            new_info["datumMinistrieelBesluit"]= {iri: MandatenDb::EXT.datumMinistrieelBesluit , value: Date.strptime(datum_besluit, "%m/%d/%Y")}
+          end
+          if datum_start
+            new_info["start"]= {iri: MandatenDb::MANDAAT.start , value: Date.strptime(datum_start, "%m/%d/%Y")}
+          else
+            new_info["start"]= {iri: MandatenDb::MANDAAT.start , value: Date.strptime("1/1/2019", "%m/%d/%Y")}
+          end
+          graph = mdb.update_mandataris(result["mandataris"], result.to_h, new_info)
+          file.write graph.dump(:ttl)
+        else
           puts "creating burgemeester voor #{gemeentenaam}"
           (persoon, identifier) = mdb.find_person(row['RR'])
           burgemeester = mdb.find_mandaat(orgaan, burgemeesterRole)
-          status = mandataris_statussen[rol.downcase]
-          (mandataris, iri) = mdb.create_mandataris(persoon, burgemeester, datum, status)
+          (mandataris, iri) = mdb.create_mandataris(persoon, burgemeester, status, datum_eed, datum_start, datum_besluit)
+          file.write mandataris.dump(:ttl)
         end
-        file.write mandataris.dump(:ttl)
       end
     rescue StandardError => e
       puts e
