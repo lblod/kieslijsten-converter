@@ -147,8 +147,6 @@ class MandatenDb
     graph = RDF::Repository.new
     new_info.each do |key, value|
       if (not existing_info.key?(key)) and new_info[key]
-        log.warn(key)
-        log.warn(existing_info.inspect)
         graph << [ mandataris, new_info[key][:iri], new_info[key][:value]]
       end
     end
