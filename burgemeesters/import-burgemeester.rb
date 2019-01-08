@@ -294,6 +294,31 @@ class MandatenDb
     end
   end
 
+  def remove_if_needed(row, orgaantype, burgemeesterRole, mandataris_statussen)
+    if !row["te verwijderen"]
+      return false
+    end
+
+    gemeentenaam = row["kieskring"]
+    datum_eed = row["datum eedaflegging"]
+    datum_besluit= row["datum besluit"]
+    datum_start = row["Datum start mandaat"]
+    rol = row["Mandaat"]
+
+    orgaan = bestuursorgaan_voor_gemeentenaam(gemeentenaam, orgaantype, "2019-01-01" )
+    status = mandataris_statussen[rol.downcase]
+
+    if mandataris_exists(orgaan, burgemeesterRole)
+      result = find_mandataris(orgaan, burgemeesterRole)
+      p "-- mandataris #{result['mandataris']} in delete row #{row}"
+      @mandatarissen_to_delete << result['mandataris']
+      return true
+    end
+
+    return false
+
+  end
+
 end
 
 
