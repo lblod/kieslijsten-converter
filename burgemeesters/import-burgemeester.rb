@@ -368,11 +368,13 @@ mdb.write_ttl_to_file("burgemeesters") do |file|
           graph = mdb.update_mandataris(result["mandataris"], result.to_h, new_info)
           file.write graph.dump(:ttl)
         else
-          puts "creating burgemeester voor #{gemeentenaam}"
-          (persoon, identifier) = mdb.find_person(row['RR'])
-          burgemeester = mdb.find_mandaat(orgaan, burgemeesterRole)
-          (mandataris, iri) = mdb.create_mandataris(persoon, burgemeester, status, datum_eed, datum_start, datum_besluit)
-          file.write mandataris.dump(:ttl)
+          if not (datum_eed.nil? || datum_eed.empty?)
+            puts "creating burgemeester voor #{gemeentenaam}"
+            (persoon, identifier) = mdb.find_person(row['RR'])
+            burgemeester = mdb.find_mandaat(orgaan, burgemeesterRole)
+            (mandataris, iri) = mdb.create_mandataris(persoon, burgemeester, status, datum_eed, datum_start, datum_besluit)
+            file.write mandataris.dump(:ttl)
+          end
         end
       end
     rescue StandardError => e
@@ -380,3 +382,4 @@ mdb.write_ttl_to_file("burgemeesters") do |file|
     end
   end
 end
+mdb.generate_mandatarissen_to_delete_query()
