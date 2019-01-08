@@ -8,6 +8,7 @@ require 'date'
 require 'securerandom'
 require 'tempfile'
 require 'csv'
+require 'pry-byebug'
 
 class MandatenDb
   attr_reader :client, :log
@@ -339,10 +340,17 @@ mdb.write_ttl_to_file("burgemeesters") do |file|
       datum_besluit= row["datum besluit"]
       datum_start = row["Datum start mandaat"]
       rol = row["Mandaat"]
-      if rol and mandataris_statussen.keys.include?(rol.downcase) and not (datum_eed.nil? || datum_eed.empty?)
+
+      #manage the remove rows
+      if(mdb.remove_if_needed(row, orgaantype, burgemeesterRole, mandataris_statussen))
+        next
+      end
+
+      if rol and mandataris_statussen.keys.include?(rol.downcase)
         orgaan = mdb.bestuursorgaan_voor_gemeentenaam(gemeentenaam, orgaantype, "2019-01-01" )
         status = mandataris_statussen[rol.downcase]
         if mdb.mandataris_exists(orgaan, burgemeesterRole)
+
           puts "updating burgemeester voor #{gemeentenaam} (additions only)"
           result = mdb.find_mandataris(orgaan, burgemeesterRole)
 
