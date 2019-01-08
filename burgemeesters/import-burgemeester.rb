@@ -196,6 +196,32 @@ class MandatenDb
     graph
   end
 
+  def generate_mandatarissen_to_delete_query()
+    uris_to_flush = @mandatarissen_to_delete.map{ |u| "<#{u}>"}.join(",")
+
+    query = %(
+               PREFIX ns5:  <http://purl.org/dc/terms/>
+               PREFIX ns2: <http://mu.semte.ch/vocabularies/core/>
+               # delete subscenario
+                DELETE {
+                  GRAPH ?g {
+                    ?s ?p ?o.
+                  }
+                }
+                WHERE {
+                  GRAPH ?g {
+                    ?s ?p ?o .
+                    FILTER( ?s IN (#{uris_to_flush})) .
+                  }
+                };
+           )
+
+    file_path = File.join(ENV['OUTPUT_PATH'],"#{@timestamp_delete_mandatarissen_file}-remove-burgemeesters.sparql")
+    open(file_path, 'w') { |f| f << query }
+
+    query
+  end
+
   def create_mandataris(persoon, mandaat, status, datum_eed = nil, datum_start = nil, datum_besluit = nil)
     graph = RDF::Repository.new
     uuid = SecureRandom.uuid
