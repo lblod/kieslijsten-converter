@@ -345,6 +345,14 @@ mdb.write_ttl_to_file("burgemeesters") do |file|
         if mdb.mandataris_exists(orgaan, burgemeesterRole)
           puts "updating burgemeester voor #{gemeentenaam} (additions only)"
           result = mdb.find_mandataris(orgaan, burgemeesterRole)
+
+
+          if datum_eed.nil? || datum_eed.empty?
+            p "--- Datum eed has been removed -> remove mandataris #{result['mandataris']}"
+            mdb.mandatarissen_to_delete << result['mandataris']
+            next
+          end
+
           new_info = {}
           if datum_eed
             new_info[:datumEedaflegging] = {iri: MandatenDb::EXT.datumEedaflegging , value: Date.strptime(datum_eed, "%m/%d/%Y")}
