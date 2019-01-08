@@ -28,11 +28,15 @@ class MandatenDb
   BASE_IRI='http://data.lblod.info/id'
 
   def initialize(endpoint)
+    @mandatarissen_to_delete = []
     @endpoint = endpoint
     @client = SPARQL::Client.new(endpoint)
     @log = Logger.new(STDOUT)
     @log.level = Logger::INFO
     wait_for_db
+
+    @timestamp_delete_mandatarissen_file = DateTime.now.strftime("%Y%m%d%H%M%S")
+    sleep 2 #hack to create file delete which precedes inser ttl.
   end
 
   def write_ttl_to_file(name)
@@ -143,10 +147,49 @@ class MandatenDb
     end
   end
 
+  def _pure_updated_info(key, existing_info, new_info)
+    existing_info.key?(key) and new_info[key] and new_info[key][:value].to_s != existing_info[key].value
+  end
+
+  def _removed_info(key, existing_info, new_info)
+    existing_info.key?(key) and new_info.key?(key) == false
+  end
+
   def update_mandataris(mandataris, existing_info, new_info)
     graph = RDF::Repository.new
+
+    # needs update
+    updated_data = new_info.each.select { |key, value|  _pure_updated_info(key, existing_info, new_info)}
+    if not updated_data.empty?
+      # update all info
+      new_info.each do |key, value|
+        if _pure_updated_info(key, existing_info, new_info)
+          puts "--- Mandataris #{mandataris} has updated info"
+          puts "--- Found updated info #{key} #{new_info[key][:value].to_s} vs. #{existing_info[key].value}"
+        end
+        graph << [ mandataris, new_info[key][:iri], new_info[key][:value]]
+      end
+      @mandatarissen_to_delete << mandataris
+      return graph
+    end
+
+    # removed info
+    removed_data = [:datumMinistrieelBesluit, :start, :datumEedaflegging].each.select { |key, value|  _removed_info(key, existing_info, new_info)}
+    if not removed_data.empty?
+      # update all info
+      new_info.each do |key, value|
+        if _removed_info(key, existing_info, new_info)
+          puts "--- Mandataris #{mandataris} has removed info"
+        end
+        graph << [ mandataris, new_info[key][:iri], new_info[key][:value]]
+      end
+      @mandatarissen_to_delete << mandataris
+      return graph
+    end
+
+    # insert new triples
     new_info.each do |key, value|
-      if (not existing_info.key?(key)) and new_info[key]
+        if (not existing_info.key?(key)) and new_info[key]
         graph << [ mandataris, new_info[key][:iri], new_info[key][:value]]
       end
     end
