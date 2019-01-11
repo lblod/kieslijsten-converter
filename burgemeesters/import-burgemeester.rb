@@ -162,6 +162,7 @@ class MandatenDb
     # needs update
     updated_data = new_info.each.select { |key, value|  _pure_updated_info(key, existing_info, new_info)}
     if not updated_data.empty?
+      res = find_mandataris_info_uri(mandataris)
       # update all info
       new_info.each do |key, value|
         if _pure_updated_info(key, existing_info, new_info)
@@ -170,6 +171,8 @@ class MandatenDb
         end
         graph << [ mandataris, new_info[key][:iri], new_info[key][:value]]
       end
+
+      update_mandataris_minimal(graph, mandataris, res)
       @mandatarissen_to_delete << mandataris
       return graph
     end
@@ -178,12 +181,14 @@ class MandatenDb
     removed_data = [:datumMinistrieelBesluit, :start, :datumEedaflegging].each.select { |key, value|  _removed_info(key, existing_info, new_info)}
     if not removed_data.empty?
       # update all info
+      res = find_mandataris_info_uri(mandataris)
       new_info.each do |key, value|
         if _removed_info(key, existing_info, new_info)
           puts "--- Mandataris #{mandataris} has removed info"
         end
         graph << [ mandataris, new_info[key][:iri], new_info[key][:value]]
       end
+      update_mandataris_minimal(graph, mandataris, res)
       @mandatarissen_to_delete << mandataris
       return graph
     end
@@ -244,6 +249,32 @@ class MandatenDb
     [graph, iri]
   end
 
+  def find_mandataris_info_uri(uri)
+    result = query(%(
+        PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+        PREFIX org: <http://www.w3.org/ns/org#>
+        PREFIX mandaat: <http://data.vlaanderen.be/ns/mandaat#>
+
+        SELECT ?uuid, ?mandaat, ?persoon, ?status WHERE{
+          <#{uri.to_s}> mu:uuid ?uuid.
+          <#{uri.to_s}> mandaat:isBestuurlijkeAliasVan ?persoon.
+          <#{uri.to_s}> mandaat:status ?status.
+          <#{uri.to_s}> org:holds ?mandaat.
+         }
+     ))
+    if result.size == 1
+      return result[0]
+    end
+  end
+
+  def update_mandataris_minimal(graph, mandataris, data)
+    graph << [ mandataris , RDF.type, MANDAAT.Mandataris ]
+    graph << [ mandataris, MU.uuid, data.uuid ]
+    graph << [ mandataris, ORG.holds, data.mandaat ]
+    graph << [ mandataris, MANDAAT.isBestuurlijkeAliasVan, data.persoon]
+    graph << [ mandataris, MANDAAT.status, data.status]
+  end
+
   def find_mandataris(orgaan, type)
     result = query(%(
           PREFIX org: <http://www.w3.org/ns/org#>
@@ -267,14 +298,19 @@ class MandatenDb
     end
   end
 
-  def mandataris_exists(orgaan, type)
+  def mandataris_exists(orgaan, type, rrn)
     query(%(
           PREFIX org: <http://www.w3.org/ns/org#>
           PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
+          PREFIX mandaat: <http://data.vlaanderen.be/ns/mandaat#>
+          PREFIX adms: <http://www.w3.org/ns/adms#>
            ASK {
                <#{orgaan.to_s}> org:hasPost ?mandaat.
                ?mandaat org:role <#{type}>.
                ?mandataris org:holds ?mandaat.
+               ?mandataris mandaat:isBestuurlijkeAliasVan ?persoon.
+               ?persoon adms:identifier ?id.
+               ?id <http://www.w3.org/2004/02/skos/core#notation> "#{rrn}".
     }))
   end
   def wait_for_db
@@ -299,7 +335,6 @@ class MandatenDb
     if !row["te verwijderen"]
       return false
     end
-
     gemeentenaam = row["kieskring"]
     datum_eed = row["datum eedaflegging"]
     datum_besluit= row["datum besluit"]
@@ -309,15 +344,18 @@ class MandatenDb
     orgaan = bestuursorgaan_voor_gemeentenaam(gemeentenaam, orgaantype, "2019-01-01" )
     status = mandataris_statussen[rol.downcase]
 
-    if mandataris_exists(orgaan, burgemeesterRole)
+    if mandataris_exists(orgaan, burgemeesterRole, row["RR"])
       result = find_mandataris(orgaan, burgemeesterRole)
       p "-- mandataris #{result['mandataris']} in delete row #{row}"
       @mandatarissen_to_delete << result['mandataris']
-      return true
     end
 
-    return false
+    return true
 
+  end
+
+  def append_mandatarissen_to_delete(mandataris)
+    @mandatarissen_to_delete << mandataris
   end
 
 end
@@ -349,7 +387,7 @@ mdb.write_ttl_to_file("burgemeesters") do |file|
       if rol and mandataris_statussen.keys.include?(rol.downcase)
         orgaan = mdb.bestuursorgaan_voor_gemeentenaam(gemeentenaam, orgaantype, "2019-01-01" )
         status = mandataris_statussen[rol.downcase]
-        if mdb.mandataris_exists(orgaan, burgemeesterRole)
+        if mdb.mandataris_exists(orgaan, burgemeesterRole, row["RR"])
 
           puts "updating burgemeester voor #{gemeentenaam} (additions only)"
           result = mdb.find_mandataris(orgaan, burgemeesterRole)
@@ -357,7 +395,7 @@ mdb.write_ttl_to_file("burgemeesters") do |file|
 
           if datum_eed.nil? || datum_eed.empty?
             p "--- Datum eed has been removed -> remove mandataris #{result['mandataris']}"
-            mdb.mandatarissen_to_delete << result['mandataris']
+            mdb.append_mandatarissen_to_delete(result['mandataris'])
             next
           end
 
