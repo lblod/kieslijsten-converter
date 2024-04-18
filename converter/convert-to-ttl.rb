@@ -49,7 +49,7 @@ class MandatenDb
           PREFIX org: <http://www.w3.org/ns/org#>
           PREFIX mandaat: <http://data.vlaanderen.be/ns/mandaat#>
           PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
-          SELECT ?iri
+          SELECT DISTINCT ?iri
           WHERE {
              ?iri a besluit:Bestuursorgaan ;
                   mandaat:isTijdspecialisatieVan ?orgaan;
@@ -77,7 +77,7 @@ class MandatenDb
           PREFIX org: <http://www.w3.org/ns/org#>
           PREFIX mandaat: <http://data.vlaanderen.be/ns/mandaat#>
           PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
-          SELECT ?iri
+          SELECT DISTINCT ?iri
           WHERE {
                 ?iri a mandaat:Kandidatenlijst;
                    mandaat:behoortTot <#{behoortTot}>;
@@ -112,7 +112,7 @@ class MandatenDb
           PREFIX org: <http://www.w3.org/ns/org#>
           PREFIX mandaat: <http://data.vlaanderen.be/ns/mandaat#>
           PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
-          SELECT ?iri
+          SELECT DISTINCT ?iri
           WHERE {
                 ?iri a mandaat:RechtstreekseVerkiezing;
                    mandaat:datum "#{date}"^^xsd:date;
@@ -122,7 +122,7 @@ class MandatenDb
     if res.size == 1
       res[0][:iri].value
     else
-      log.warn "no rechtstreekse verkiezing found for #{orgaan} and #{date}"
+      log.warn "#{res.size} rechtstreekse verkiezingen found for #{orgaan} and #{date}"
     end
   end
 
@@ -141,7 +141,7 @@ class MandatenDb
     result = query(%(
       PREFIX adms:<http://www.w3.org/ns/adms#>
       PREFIX skos:<http://www.w3.org/2004/02/skos/core#>
-      SELECT ?person ?identifier
+      SELECT DISTINCT ?person ?identifier
       WHERE {
         ?person adms:identifier ?identifier.
         ?identifier skos:notation "#{rrn}".
@@ -151,6 +151,7 @@ class MandatenDb
     if result.size == 1
       [result[0][:person], result[0][:identifier]]
     else
+      log.warn "found #{result.size} persons for rrn #{rrn}"
       nil
     end
   end
@@ -158,7 +159,7 @@ class MandatenDb
   def birthdate(date)
     result = query(%(
       PREFIX persoon: <http://data.vlaanderen.be/ns/persoon#>
-      SELECT ?birthdate
+      SELECT DISTINCT ?birthdate
       WHERE {
         ?birthdate a persoon:Geboorte;
                    persoon:datum "#{date}"^^xsd:date
@@ -179,7 +180,7 @@ class MandatenDb
   end
 
   def geslacht(g)
-    if g == 'F'
+    if g == 'F' or g == 'V'
       RDF::URI.new('http://publications.europa.eu/resource/authority/human-sex/FEMALE')
     elsif g == 'M'
       RDF::URI.new('http://publications.europa.eu/resource/authority/human-sex/MALE')
@@ -215,7 +216,7 @@ class MandatenDb
           PREFIX persoon: <http://data.vlaanderen.be/ns/persoon#>
           PREFIX skos:    <http://www.w3.org/2004/02/skos/core#>
           PREFIX mu:      <http://mu.semte.ch/vocabularies/core/>
-          SELECT ?voornaam ?achternaam ?geboortedatum ?geslacht ?uuid
+          SELECT DISTINCT ?voornaam ?achternaam ?geboortedatum ?geslacht ?uuid
           WHERE {
              OPTIONAL { <#{person.value}> foaf:familyName ?achternaam. }
              OPTIONAL { <#{person.value}> persoon:gebruikteVoornaam ?voornaam. }
@@ -369,12 +370,12 @@ class Converter
           log.info "invalid date #{row["geboortedatum"]} for rrn: #{row["RR"]}, row: #{index} "
           geboortedatum = nil
         end
-        unless row['Rrvoornaam']
-          log.info "missing Rrvoornaam for rrn: #{row["RR"]}, row: #{index}"
+        unless row['RRvoornaam']
+          log.info "missing RRvoornaam for rrn: #{row["RR"]}, row: #{index}"
         end
         if persoon
           gegevens = mdb.fetch_person_details(persoon)
-          voornaam = gegevens[:voornaam] ? gegevens[:voornaam] : row['Rrvoornaam']
+          voornaam = gegevens[:voornaam] ? gegevens[:voornaam] : row['RRvoornaam']
           achternaam = gegevens[:achternaam] ? gegevens[:achternaam] : row['RRachternaam']
           geslacht = gegevens[:geslacht] ? gegevens[:geslacht] : row['geslacht']
           geboortedatum = gegevens[:geboortedatum] ? gegevens[:geboortedatum] : geboortedatum
@@ -387,8 +388,9 @@ class Converter
                             uuid: uuid)
           repository.write(triples.dump(:ttl))
         else
+          log.warn "creating persoon for rrn #{row['RR']}"
           ( persoon, triples, sensitive_triples ) = mdb.create_person( identifier: identifier,
-                                                                       voornaam: row['Rrvoornaam'],
+                                                                       voornaam: row['RRvoornaam'],
                                                                        achternaam: row['RRachternaam'],
                                                                        geslacht: row['geslacht'],
                                                                        geboortedatum: geboortedatum
@@ -536,7 +538,7 @@ converter = Converter.new(
   transform_path: '/data/transforms',
   input_date_format: ENV['INPUT_DATE_FORMAT'],
   log_level: ENV['LOG_LEVEL'],
-  provincie: true
+  provincie: false # only if we are parsing a provincielijst
 )
 converter.run_data_transforms
 kieslijsten = converter.parse_kieslijsten(ENV['KANDIDATENLIJST_TYPE_IRI'], ENV['BESTUURSORGAAN_TYPE_IRI'], ENV['ORGAAN_START_DATUM'])

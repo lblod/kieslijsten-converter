@@ -1,7 +1,7 @@
-version: '3.4'
+version: "3.4"
 services:
   database:
-    image: tenforce/virtuoso
+    image: redpencil/virtuoso:1.2.0-rc.1
     environment:
       SPARQL_UPDATE: "true"
       DEFAULT_GRAPH: "http://mu.semte.ch/application"
@@ -12,12 +12,15 @@ services:
   converter:
     build: ./converter
     environment:
-      ENDPOINT: 'http://database:8890/sparql'
-      KANDIDATENLIJST_TYPE_IRI: 'http://data.vlaanderen.be/id/concept/KandidatenlijstLijsttype/90e3b7d0-2fae-43a1-957e-6daa8d072be1' # provincieraad
-      BESTUURSORGAAN_TYPE_IRI: 'http://data.vlaanderen.be/id/concept/BestuursorgaanClassificatieCode/5ab0e9b8a3b2ca7c5e00000c' # provincieraad
-      ORGAAN_START_DATUM: '2019-01-01'
-      LOG_LEVEL: 'info'
+      ENDPOINT: "http://database:8890/sparql"
+      #KANDIDATENLIJST_TYPE_IRI: "http://data.vlaanderen.be/id/concept/KandidatenlijstLijsttype/90e3b7d0-2fae-43a1-957e-6daa8d072be1" # provincieraad
+      KANDIDATENLIJST_TYPE_IRI: "http://data.vlaanderen.be/id/concept/KandidatenlijstLijsttype/95de36e5-8c7a-4308-af7b-75afbd943dd2" # gemeenteraad
+      BESTUURSORGAAN_TYPE_IRI: "http://data.vlaanderen.be/id/concept/BestuursorgaanClassificatieCode/5ab0e9b8a3b2ca7c5e000005" # gemeenteraad
+      # BESTUURSORGAAN_TYPE_IRI: "http://data.vlaanderen.be/id/concept/BestuursorgaanClassificatieCode/5ab0e9b8a3b2ca7c5e00000c" # provincieraad
+      ORGAAN_START_DATUM: "2019-01-01"
+      LOG_LEVEL: "info"
+      INPUT_DATE_FORMAT: "%d/%m/%Y"
     volumes:
-      - './data/input-provincies:/data/input'
-      - './data/output:/data/output'
-      - './data/transforms:/data/transforms'
+      - "./data/input:/data/input"
+      - "./data/output:/data/output"
+      - "./data/transforms:/data/transforms"
