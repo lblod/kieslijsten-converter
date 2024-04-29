@@ -15,7 +15,6 @@ INSERT {
        mandaat:bindingStart "2025-01-01"^^<http://www.w3.org/2001/XMLSchema#date> .
   }
 } WHERE {
-  GRAPH ?g {
     ?bestuurseenheid a besluit:Bestuurseenheid ;
        skos:prefLabel ?naam;
        besluit:classificatie ?classificatie .
@@ -24,85 +23,16 @@ INSERT {
 
     ?bestuursorgaan besluit:bestuurt ?bestuurseenheid ;
        skos:prefLabel ?bestuursorgaanLabel .
-    ?vorigBestuursorgaanInTijd mandaat:isTijdspecialisatieVan ?bestuursorgaan .
+    GRAPH ?g { #This way we are sure that the bestuursorgaan is saved in the correct graph
+      ?vorigBestuursorgaanInTijd mandaat:isTijdspecialisatieVan ?bestuursorgaan .
+    }
     ?vorigBestuursorgaanInTijd mandaat:bindingStart "2019-01-01"^^<http://www.w3.org/2001/XMLSchema#date> .
 
 
     BIND(SHA256(CONCAT("ef263097-4f6f-416c-9ba9-168ab2d98721", ":", STR(?bestuursorgaanLabel))) AS ?uuidInTijd) .
     BIND(IRI(CONCAT("http://data.lblod.info/id/bestuursorganen/", STR(?uuidInTijd))) AS ?bestuursorgaanInTijd) .
     FILTER(?naam NOT IN ("Kruisem", "Pelt", "Lievegem", "Oudsbergen", "Puurs-Sint-Amands"))
-  }
-}
-
-;
-
-# Nieuw bestuursorgaan Voorzitter BCSD met nieuw bestuursorgaan in tijd voor OCMW
-
-INSERT {
-  GRAPH ?g {
-    ?bestuursorgaan a besluit:Bestuursorgaan ;
-      skos:prefLabel ?bestuursorgaanLabel ;
-      mu:uuid ?uuid ;
-      besluit:classificatie <http://data.vlaanderen.be/id/concept/BestuursorgaanClassificatieCode/53c0d8cd-f3a2-411d-bece-4bd83ae2bbc9> ;
-      besluit:bestuurt ?bestuurseenheid .
-
-    ?bestuursorgaanInTijd a besluit:Bestuursorgaan ;
-       mandaat:isTijdspecialisatieVan ?bestuursorgaan ;
-       mu:uuid ?uuidInTijd ;
-       mandaat:bindingStart "2025-01-01"^^<http://www.w3.org/2001/XMLSchema#date> .
-  }
-} WHERE {
-  GRAPH ?g {
-    <http://data.vlaanderen.be/id/concept/BestuursorgaanClassificatieCode/53c0d8cd-f3a2-411d-bece-4bd83ae2bbc9> skos:prefLabel ?classificatieLabel .
-
-    ?bestuurseenheid a besluit:Bestuurseenheid ; 
-      besluit:classificatie <http://data.vlaanderen.be/id/concept/BestuurseenheidClassificatieCode/5ab0e9b8a3b2ca7c5e000002> ;
-      skos:prefLabel ?bestuurseenheidLabel .
-
-    BIND(CONCAT(STR(?classificatieLabel), " ", STR(?bestuurseenheidLabel)) AS ?bestuursorgaanLabel) .
-    BIND(SHA256(CONCAT("1aee45a1-0bb6-49a0-976f-461c84e269f2", ":", STR(?bestuursorgaanLabel))) AS ?uuid) .
-    BIND(IRI(CONCAT("http://data.lblod.info/id/bestuursorganen/", STR(?uuid))) AS ?bestuursorgaan) .
-
-    BIND(SHA256(CONCAT("ef263097-4f6f-416c-9ba9-168ab2d98721", ":", STR(?bestuursorgaanLabel))) AS ?uuidInTijd) .
-    BIND(IRI(CONCAT("http://data.lblod.info/id/bestuursorganen/", STR(?uuidInTijd))) AS ?bestuursorgaanInTijd) .
-  }
-}
-
-;
-
-# Nieuw bestuursorgaan Districtsburgemeester met nieuw bestuursorgaan in tijd voor District
-
-INSERT {
-  GRAPH ?g {
-    ?bestuursorgaan a besluit:Bestuursorgaan ;
-      skos:prefLabel ?bestuursorgaanLabel ;
-      mu:uuid ?uuid ;
-      besluit:classificatie <http://data.vlaanderen.be/id/concept/BestuursorgaanClassificatieCode/9314533e-891f-4d84-a492-0338af104065> ;
-      besluit:bestuurt ?bestuurseenheid .
-
-    ?bestuursorgaanInTijd a besluit:Bestuursorgaan ;
-       mandaat:isTijdspecialisatieVan ?bestuursorgaan ;
-       mu:uuid ?uuidInTijd ;
-       mandaat:bindingStart "2025-01-01"^^<http://www.w3.org/2001/XMLSchema#date> .
-  }
-} WHERE {
-  GRAPH ?g {
-    <http://data.vlaanderen.be/id/concept/BestuursorgaanClassificatieCode/9314533e-891f-4d84-a492-0338af104065> skos:prefLabel ?classificatieLabel .
-
-    ?bestuurseenheid a besluit:Bestuurseenheid ; 
-      besluit:classificatie <http://data.vlaanderen.be/id/concept/BestuurseenheidClassificatieCode/5ab0e9b8a3b2ca7c5e000003> ;
-      skos:prefLabel ?bestuurseenheidLabel .
-
-    BIND(CONCAT(STR(?classificatieLabel), " ", STR(?bestuurseenheidLabel)) AS ?bestuursorgaanLabel) .
-    BIND(SHA256(CONCAT("1aee45a1-0bb6-49a0-976f-461c84e269f2", ":", STR(?bestuursorgaanLabel))) AS ?uuid) .
-    BIND(IRI(CONCAT("http://data.lblod.info/id/bestuursorganen/", STR(?uuid))) AS ?bestuursorgaan) .
-
-    BIND(SHA256(CONCAT("ef263097-4f6f-416c-9ba9-168ab2d98721", ":", STR(?bestuursorgaanLabel))) AS ?uuidInTijd) .
-    BIND(IRI(CONCAT("http://data.lblod.info/id/bestuursorganen/", STR(?uuidInTijd))) AS ?bestuursorgaanInTijd) .
-  }
-}
-
-;
+};
 
 # Mandaat gemeenteraadslid in gemeenteraad
 
