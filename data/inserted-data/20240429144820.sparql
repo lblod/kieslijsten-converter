@@ -10,12 +10,13 @@ CONSTRUCT {
       mandaat:isTijdspecialisatieVan ?bestuursorgaan ;
       mu:uuid ?uuidInTijd ;
       mandaat:bindingStart "2025-01-01"^^<http://www.w3.org/2001/XMLSchema#date> .
-
-  ?mandaat a mandaat:Mandaat ;
+  
+  # Mandaat gemeenteraadslid in gemeenteraad
+  ?mandaatForRoleOne a mandaat:Mandaat ;
       mu:uuid ?uuid ;
       org:role <http://data.vlaanderen.be/id/concept/BestuursfunctieCode/5ab0e9b8a3b2ca7c5e000011> .
-
-    ?mandaatBestuursorgaanInTijd org:hasPost ?mandaat .
+  
+  ?mandaatBestuursorgaanInTijd org:hasPost ?mandaatForRoleOne .
 } WHERE {
   ?vorigBestuursorgaanInTijd mandaat:bindingEinde "2025-01-01"^^<http://www.w3.org/2001/XMLSchema#date> .
       ?bestuursorgaanInTijd a besluit:Bestuursorgaan ;
@@ -23,9 +24,10 @@ CONSTRUCT {
         mu:uuid ?uuidInTijd ;
         mandaat:bindingStart "2025-01-01"^^<http://www.w3.org/2001/XMLSchema#date> .
 
-  ?mandaat a mandaat:Mandaat ;
+  # Mandaat gemeenteraadslid in gemeenteraad
+  ?mandaatForRoleOne a mandaat:Mandaat ;
       mu:uuid ?uuid ;
       org:role <http://data.vlaanderen.be/id/concept/BestuursfunctieCode/5ab0e9b8a3b2ca7c5e000011> .
 
-    ?mandaatBestuursorgaanInTijd org:hasPost ?mandaat .
+  ?mandaatBestuursorgaanInTijd org:hasPost ?mandaatForRoleOne .
 }
