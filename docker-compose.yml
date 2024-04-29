@@ -17,7 +17,7 @@ services:
       KANDIDATENLIJST_TYPE_IRI: "http://data.vlaanderen.be/id/concept/KandidatenlijstLijsttype/95de36e5-8c7a-4308-af7b-75afbd943dd2" # gemeenteraad
       BESTUURSORGAAN_TYPE_IRI: "http://data.vlaanderen.be/id/concept/BestuursorgaanClassificatieCode/5ab0e9b8a3b2ca7c5e000005" # gemeenteraad
       # BESTUURSORGAAN_TYPE_IRI: "http://data.vlaanderen.be/id/concept/BestuursorgaanClassificatieCode/5ab0e9b8a3b2ca7c5e00000c" # provincieraad
-      ORGAAN_START_DATUM: "2019-01-01"
+      ORGAAN_START_DATUM: "2025-01-01"
       LOG_LEVEL: "info"
       INPUT_DATE_FORMAT: "%d/%m/%Y"
     volumes:
