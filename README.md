@@ -14,17 +14,20 @@ create the appropriate data structures based on provided data
 > [!NOTE]
 > If you are using a dump of a pre-existing database instead, make sure that there are no pre-existing instances of RechstreekseVerkiezingen in your database for the target date.
 
-2. place the required source data in `data/input`
+2. place the required source data in `data/input/<year_of_election>`
 
 - `lijsten.csv` a csv with candidate lists per township (required headers: `kieskring`, `lijstnr`, `lijst`, `datum` )
 - `kandidaten.csv` a csv with candidates per list per township (required headers: `kieskring`, `lijstnr`, `verkregen zetels`, `volgnr`, `RRvoornaam `, `RRachternaam`, `RR`, `verkozen`, `opvolger`, `naamstemmen`, `geslacht`, `geboortedatum`)
 
 The kandidaten.csv file contains sensitive data. Do not commit this to this repository. An example kandidaten file with fake information is added to this repo instead. It contains fake results for the Aalter and Aarschot administrative bodies.
 
-3. add any necessary transformation queries in `data/transforms`.
+3. add any necessary transformation queries in `data/transforms/<year_of_election>`.
    These queries will run after the input has been loaded, queries should have a `.rq` extension
 
-4. configure the env variables:
+4. Update the converter with the correct year of election
+   At the bottom of `convert-to-ttl.rb` paths are defined. Update **input_path** and **transform_path** to point to the correct election folder.
+
+5. configure the env variables:
 
 - `ENDPOINT`: SPARQL endpoint to connect to ('http://database:8890/sparql')
 - `KANDIDATENLIJST_TYPE_IRI`: iri of the type of the candidates list ('http://data.vlaanderen.be/id/concept/KandidatenlijstLijsttype/95de36e5-8c7a-4308-af7b-75afbd943dd2')
@@ -53,6 +56,10 @@ The data being produced is:
 A line is commented in the convert-to-ttl script where the function update_kieslijsten is called. It allows the lijstnummers for the kieslijsten to be updated given that the information generated in the previous step is already in the database (so it keeps the old uris but recomputes the kieslijst numbers based on the lijsten.csv).
 
 ## extra scripts
+
+#### getting the constructed data
+
+In the folder `constructed-data` you will find one or more construct queries that will give you all the values that have been inserted to the database per election year. You can run these to get all the triples for the election.
 
 #### create-fusiegemeenten.rb
 
