@@ -10,12 +10,11 @@ CONSTRUCT {
       mu:uuid ?uuidInTijd ;
       mandaat:bindingStart "2025-01-01"^^<http://www.w3.org/2001/XMLSchema#date> .
   
-  # Mandaat gemeenteraadslid in gemeenteraad
   ?mandaat a mandaat:Mandaat ;
       mu:uuid ?uuid ;
-      org:role <http://data.vlaanderen.be/id/concept/BestuursfunctieCode/5ab0e9b8a3b2ca7c5e000011> .
+      org:role ?role .
   
-  ?mandaatBestuursorgaanInTijd org:hasPost ?mandaat .
+  ?bestuursorgaanInTijd org:hasPost ?mandaat .
 } WHERE {
   ?vorigBestuursorgaanInTijd mandaat:bindingEinde "2025-01-01"^^<http://www.w3.org/2001/XMLSchema#date> .
       ?bestuursorgaanInTijd a besluit:Bestuursorgaan ;
@@ -23,10 +22,9 @@ CONSTRUCT {
         mu:uuid ?uuidInTijd ;
         mandaat:bindingStart "2025-01-01"^^<http://www.w3.org/2001/XMLSchema#date> .
 
-  # Mandaat gemeenteraadslid in gemeenteraad
   ?mandaat a mandaat:Mandaat ;
       mu:uuid ?uuid ;
-      org:role <http://data.vlaanderen.be/id/concept/BestuursfunctieCode/5ab0e9b8a3b2ca7c5e000011> .
+      org:role ?role .
   
-  ?mandaatBestuursorgaanInTijd org:hasPost ?mandaat .
+  ?bestuursorgaanInTijd org:hasPost ?mandaat .
 }
