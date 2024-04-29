@@ -8,7 +8,7 @@ PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 
 INSERT {
   GRAPH ?g {
-    ?vorigBestuursorgaanInTijd mandaat:bindingEinde "2019-01-01"^^<http://www.w3.org/2001/XMLSchema#date> .
+    ?vorigBestuursorgaanInTijd mandaat:bindingEinde "2025-01-01"^^<http://www.w3.org/2001/XMLSchema#date> .
     ?bestuursorgaanInTijd a besluit:Bestuursorgaan ;
        mandaat:isTijdspecialisatieVan ?bestuursorgaan ;
        mu:uuid ?uuidInTijd ;
@@ -25,6 +25,8 @@ INSERT {
     ?bestuursorgaan besluit:bestuurt ?bestuurseenheid ;
        skos:prefLabel ?bestuursorgaanLabel .
     ?vorigBestuursorgaanInTijd mandaat:isTijdspecialisatieVan ?bestuursorgaan .
+    ?vorigBestuursorgaanInTijd mandaat:bindingStart "2019-01-01"^^<http://www.w3.org/2001/XMLSchema#date> .
+
 
     BIND(SHA256(CONCAT("ef263097-4f6f-416c-9ba9-168ab2d98721", ":", STR(?bestuursorgaanLabel))) AS ?uuidInTijd) .
     BIND(IRI(CONCAT("http://data.lblod.info/id/bestuursorganen/", STR(?uuidInTijd))) AS ?bestuursorgaanInTijd) .
