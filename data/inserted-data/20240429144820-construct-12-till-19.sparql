@@ -1,0 +1,119 @@
+PREFIX mandaat: <http://data.vlaanderen.be/ns/mandaat#>
+PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+PREFIX org: <http://www.w3.org/ns/org#>
+
+CONSTRUCT {
+  # Mandaat Districtsburgemeester in Districtsurgemeester en Districtcollege
+  ?mandaat a mandaat:Mandaat ;
+    mu:uuid ?uuid ;
+    org:role <http://data.vlaanderen.be/id/concept/BestuursfunctieCode/5ab0e9b8a3b2ca7c5e00001d> .
+
+  ?bestuursorgaanBurgemeesterInTijd org:hasPost ?mandaat .
+  ?bestuursorgaanCollegeInTijd org:hasPost ?mandaat .
+
+  # Mandaat Districtsschepen in Districtscollege
+  ?mandaatForRoleTwo a mandaat:Mandaat ;
+    mu:uuid ?uuidForMandaat ;
+    org:role <http://data.vlaanderen.be/id/concept/BestuursfunctieCode/5ab0e9b8a3b2ca7c5e00001e> .
+
+  ?bestuursorgaanInTijd org:hasPost ?mandaatForRoleTwo .
+
+  # Mandaat Districtraadslid in Districtsraad
+  ?mandaatForRoleThree a mandaat:Mandaat ;
+    mu:uuid ?uuidForMandaatThree ;
+    org:role <http://data.vlaanderen.be/id/concept/BestuursfunctieCode/5ab0e9b8a3b2ca7c5e00001b> .
+
+  ?mandaatBestuursorgaanInTijd org:hasPost ?mandaatForRoleThree .
+
+  # Mandaat Voorzitter van de districtsraad in Districtsraad
+  ?mandaatForRoleFour a mandaat:Mandaat ;
+    mu:uuid ?uuidForMandaatFour ;
+    org:role <http://data.vlaanderen.be/id/concept/BestuursfunctieCode/5ab0e9b8a3b2ca7c5e00001c> .
+
+  ?mandaatFourBestuursorgaanInTijd org:hasPost ?mandaatForRoleFour .
+
+  # Mandaat Gedeputeerde in Deputatie
+  ?mandaatForRoleFive a mandaat:Mandaat ;
+    mu:uuid ?uuidForMandaatFive ;
+    org:role <http://data.vlaanderen.be/id/concept/BestuursfunctieCode/5ab0e9b8a3b2ca7c5e000020> .
+
+  ?mandaatFiveBestuursorgaanInTijd org:hasPost ?mandaatForRoleFive .
+
+  # Mandaat Provincieraadslid in Provincieraad
+  ?mandaatForRoleSix a mandaat:Mandaat ;
+    mu:uuid ?uuidForMandaatSix ;
+    org:role <http://data.vlaanderen.be/id/concept/BestuursfunctieCode/5ab0e9b8a3b2ca7c5e00001f> .
+
+  ?mandaatSixBestuursorgaanInTijd org:hasPost ?mandaatForRoleSix .
+
+  # Mandaat Voorzitter provincieraad in Provincieraad
+  ?mandaatForRoleSeven a mandaat:Mandaat ;
+    mu:uuid ?uuidForMandaatSeven ;
+    org:role <http://data.vlaanderen.be/id/concept/BestuursfunctieCode/5ab0e9b8a3b2ca7c5e000027> .
+
+  ?mandaatSevenBestuursorgaanInTijd org:hasPost ?mandaatForRoleSeven .
+
+  # Mandaat Gouverneur in Gouverneur
+  ?mandaatForRoleEight a mandaat:Mandaat ;
+    mu:uuid ?uuidForMandaatEight ;
+    org:role <http://data.vlaanderen.be/id/concept/BestuursfunctieCode/d7c00cd1-baf1-4346-83c0-6796c0bedd85> .
+
+  ?mandaatEightBestuursorgaanInTijd org:hasPost ?mandaatForRoleEight .
+} WHERE {
+  # Mandaat Districtsburgemeester in Districtsurgemeester en Districtcollege
+  ?mandaat a mandaat:Mandaat ;
+    mu:uuid ?uuid ;
+    org:role <http://data.vlaanderen.be/id/concept/BestuursfunctieCode/5ab0e9b8a3b2ca7c5e00001d> .
+
+  ?bestuursorgaanBurgemeesterInTijd org:hasPost ?mandaat .
+  ?bestuursorgaanCollegeInTijd org:hasPost ?mandaat .
+
+  # Mandaat Districtsschepen in Districtscollege
+  ?mandaatForRoleTwo a mandaat:Mandaat ;
+    mu:uuid ?uuidForMandaat ;
+    org:role <http://data.vlaanderen.be/id/concept/BestuursfunctieCode/5ab0e9b8a3b2ca7c5e00001e> .
+
+  ?bestuursorgaanInTijd org:hasPost ?mandaatForRoleTwo .
+
+  # Mandaat Districtraadslid in Districtsraad
+  ?mandaatForRoleThree a mandaat:Mandaat ;
+    mu:uuid ?uuidForMandaatThree ;
+    org:role <http://data.vlaanderen.be/id/concept/BestuursfunctieCode/5ab0e9b8a3b2ca7c5e00001b> .
+
+  ?mandaatBestuursorgaanInTijd org:hasPost ?mandaatForRoleThree .
+
+  # Mandaat Voorzitter van de districtsraad in Districtsraad
+  ?mandaatForRoleFour a mandaat:Mandaat ;
+    mu:uuid ?uuidForMandaatFour ;
+    org:role <http://data.vlaanderen.be/id/concept/BestuursfunctieCode/5ab0e9b8a3b2ca7c5e00001c> .
+
+  ?mandaatFourBestuursorgaanInTijd org:hasPost ?mandaatForRoleFour .
+
+  # Mandaat Gedeputeerde in Deputatie
+  ?mandaatForRoleFive a mandaat:Mandaat ;
+    mu:uuid ?uuidForMandaatFive ;
+    org:role <http://data.vlaanderen.be/id/concept/BestuursfunctieCode/5ab0e9b8a3b2ca7c5e000020> .
+
+  ?mandaatFiveBestuursorgaanInTijd org:hasPost ?mandaatForRoleFive .
+
+  # Mandaat Provincieraadslid in Provincieraad
+  ?mandaatForRoleSix a mandaat:Mandaat ;
+    mu:uuid ?uuidForMandaatSix ;
+    org:role <http://data.vlaanderen.be/id/concept/BestuursfunctieCode/5ab0e9b8a3b2ca7c5e00001f> .
+
+  ?mandaatSixBestuursorgaanInTijd org:hasPost ?mandaatForRoleSix .
+
+  # Mandaat Voorzitter provincieraad in Provincieraad
+  ?mandaatForRoleSeven a mandaat:Mandaat ;
+    mu:uuid ?uuidForMandaatSeven ;
+    org:role <http://data.vlaanderen.be/id/concept/BestuursfunctieCode/5ab0e9b8a3b2ca7c5e000027> .
+
+  ?mandaatSevenBestuursorgaanInTijd org:hasPost ?mandaatForRoleSeven .
+
+    # Mandaat Gouverneur in Gouverneur
+  ?mandaatForRoleEight a mandaat:Mandaat ;
+    mu:uuid ?uuidForMandaatEight ;
+    org:role <http://data.vlaanderen.be/id/concept/BestuursfunctieCode/d7c00cd1-baf1-4346-83c0-6796c0bedd85> .
+
+  ?mandaatEightBestuursorgaanInTijd org:hasPost ?mandaatForRoleEight .
+}
