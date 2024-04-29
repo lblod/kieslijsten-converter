@@ -4,7 +4,7 @@ create the appropriate data structures based on provided data
 
 ## configuring this converter
 
-1. place the required data in `data/db/toLoad`.
+1. place the required data in `data/db/toLoad`. Or start from a database containing these items.
 
 - person uri's with a link to their identifier (rrn)
 - previously generated administrative bodies for the new legislature
