@@ -1,0 +1,31 @@
+PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
+PREFIX mandaat: <http://data.vlaanderen.be/ns/mandaat#>
+PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+PREFIX org: <http://www.w3.org/ns/org#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+CONSTRUCT {
+  ?vorigBestuursorgaanInTijd mandaat:bindingEinde "2025-01-01"^^<http://www.w3.org/2001/XMLSchema#date> .
+    ?bestuursorgaanInTijd a besluit:Bestuursorgaan ;
+      mandaat:isTijdspecialisatieVan ?bestuursorgaan ;
+      mu:uuid ?uuidInTijd ;
+      mandaat:bindingStart "2025-01-01"^^<http://www.w3.org/2001/XMLSchema#date> .
+
+  ?mandaat a mandaat:Mandaat ;
+      mu:uuid ?uuid ;
+      org:role <http://data.vlaanderen.be/id/concept/BestuursfunctieCode/5ab0e9b8a3b2ca7c5e000011> .
+
+    ?mandaatBestuursorgaanInTijd org:hasPost ?mandaat .
+} WHERE {
+  ?vorigBestuursorgaanInTijd mandaat:bindingEinde "2025-01-01"^^<http://www.w3.org/2001/XMLSchema#date> .
+      ?bestuursorgaanInTijd a besluit:Bestuursorgaan ;
+        mandaat:isTijdspecialisatieVan ?bestuursorgaan ;
+        mu:uuid ?uuidInTijd ;
+        mandaat:bindingStart "2025-01-01"^^<http://www.w3.org/2001/XMLSchema#date> .
+
+  ?mandaat a mandaat:Mandaat ;
+      mu:uuid ?uuid ;
+      org:role <http://data.vlaanderen.be/id/concept/BestuursfunctieCode/5ab0e9b8a3b2ca7c5e000011> .
+
+    ?mandaatBestuursorgaanInTijd org:hasPost ?mandaat .
+}
