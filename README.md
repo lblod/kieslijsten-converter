@@ -57,7 +57,7 @@ A line is commented in the convert-to-ttl script where the function update_kiesl
 
 ## Import the generated triples in your application
 
-After you ran the converter, the data has been inserted in the database by the transformer. If you want these triples to be imported into your application you can use the sparql file **constructed_data/<year_of_election>** to query these triples.
+After you ran the converter, the data containing the new Bestuursorgaan and Mandaat entities have been inserted in the database by the transformer. If you want these triples to be imported into your application you can use the sparql file **constructed_data/<year_of_election>** to query these triples.
 
 1. Run the construct query on the database ('http://database:8890/sparql')
 2. Copy the outputed data
