@@ -55,6 +55,17 @@ The data being produced is:
 
 A line is commented in the convert-to-ttl script where the function update_kieslijsten is called. It allows the lijstnummers for the kieslijsten to be updated given that the information generated in the previous step is already in the database (so it keeps the old uris but recomputes the kieslijst numbers based on the lijsten.csv).
 
+## import the generated triples in your application
+
+After you ran the converter, the data has been inserted in the database by the transformer. If you want these triples to be imported into your application you can use the sparql file **constructed_data/<year_of_election>** to query these triples.
+
+1. Run the construct query on the database ('http://database:8890/sparql')
+2. Copy the outputed data
+3. Go to your application where you want to import the triples
+4. Create a new file `.ttl` in the **config/migrations/** folder and paste it in.
+5. Create a `.graph` file where we will specify in what graph the data needs to be imported
+6. Make sure the `.graph` and the `.ttl` file have the exact same name
+
 ## extra scripts
 
 #### getting the constructed data
