@@ -533,9 +533,9 @@ end
 
 converter = Converter.new(
   endpoint: ENV["ENDPOINT"],
-  input_path: '/data/input',
+  input_path: '/data/input/2025',
   output_path: '/data/output',
-  transform_path: '/data/transforms',
+  transform_path: '/data/transforms/2025',
   input_date_format: ENV['INPUT_DATE_FORMAT'],
   log_level: ENV['LOG_LEVEL'],
   provincie: false # only if we are parsing a provincielijst
