@@ -150,8 +150,11 @@ class MandatenDb
     ))
     if result.size == 1
       [result[0][:person], result[0][:identifier]]
-    else
+    elsif result.size > 1
       log.warn "found #{result.size} persons for rrn #{rrn}"
+      nil
+    else
+      #log.warn "found #{result.size} persons for rrn #{rrn}" # 0 is fine, we will create
       nil
     end
   end
@@ -388,7 +391,7 @@ class Converter
                             uuid: uuid)
           repository.write(triples.dump(:ttl))
         else
-          log.warn "creating persoon for rrn #{row['RR']}"
+          #log.warn "creating persoon for rrn #{row['RR']}"
           ( persoon, triples, sensitive_triples ) = mdb.create_person( identifier: identifier,
                                                                        voornaam: row['RRvoornaam'],
                                                                        achternaam: row['RRachternaam'],

@@ -13,10 +13,12 @@ services:
     build: ./converter
     environment:
       ENDPOINT: "http://database:8890/sparql"
-      #KANDIDATENLIJST_TYPE_IRI: "http://data.vlaanderen.be/id/concept/KandidatenlijstLijsttype/90e3b7d0-2fae-43a1-957e-6daa8d072be1" # provincieraad
-      KANDIDATENLIJST_TYPE_IRI: "http://data.vlaanderen.be/id/concept/KandidatenlijstLijsttype/95de36e5-8c7a-4308-af7b-75afbd943dd2" # gemeenteraad
-      BESTUURSORGAAN_TYPE_IRI: "http://data.vlaanderen.be/id/concept/BestuursorgaanClassificatieCode/5ab0e9b8a3b2ca7c5e000005" # gemeenteraad
+      # KANDIDATENLIJST_TYPE_IRI: "http://data.vlaanderen.be/id/concept/KandidatenlijstLijsttype/95de36e5-8c7a-4308-af7b-75afbd943dd2" # gemeenteraad
+      # BESTUURSORGAAN_TYPE_IRI: "http://data.vlaanderen.be/id/concept/BestuursorgaanClassificatieCode/5ab0e9b8a3b2ca7c5e000005" # gemeenteraad
+      # KANDIDATENLIJST_TYPE_IRI: "http://data.vlaanderen.be/id/concept/KandidatenlijstLijsttype/90e3b7d0-2fae-43a1-957e-6daa8d072be1" # provincieraad
       # BESTUURSORGAAN_TYPE_IRI: "http://data.vlaanderen.be/id/concept/BestuursorgaanClassificatieCode/5ab0e9b8a3b2ca7c5e00000c" # provincieraad
+      KANDIDATENLIJST_TYPE_IRI: "http://data.vlaanderen.be/id/concept/KandidatenlijstLijsttype/44aa08d2-fa02-42a3-8ae2-7dbfb23afdcc" # districten
+      BESTUURSORGAAN_TYPE_IRI: "http://data.vlaanderen.be/id/concept/BestuursorgaanClassificatieCode/5ab0e9b8a3b2ca7c5e00000a" # districtsraad
       ORGAAN_START_DATUM: "2025-01-01"
       LOG_LEVEL: "info"
       INPUT_DATE_FORMAT: "%d/%m/%Y"
