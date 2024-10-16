@@ -365,7 +365,7 @@ class Converter
           rrn_graph << sensitive_triples
         end
         begin
-          geboortedatum = Date.strptime(row["geboortedatum"], "%m/%d/%Y")
+          geboortedatum = Date.strptime(row["geboortedatum"], "%d/%m/%Y")
         rescue
           log.info "invalid date #{row["geboortedatum"]} for rrn: #{row["RR"]}, row: #{index} "
           geboortedatum = nil
@@ -399,7 +399,7 @@ class Converter
           repository.write(triples.dump(:ttl))
         end
         begin
-          lijst = @provincie ? lijsten["#{provincie(row["kieskring"])}-#{row["kieskring"]}-#{row["lijstnr"]}"] : lijsten["#{row["kieskring"]}-#{row["lijstnr"]}"]
+          lijst = @provincie ? lijsten["#{provincie(row["NIS"])}-#{row["NIS"]}-#{row["lijstnr"]}"] : lijsten["#{row["kieskring"]}-#{row["lijstnr"]}"]
           log.debug lijst
           gevolg = gevolg(row)
           rangorde = rangorde(row)
@@ -467,6 +467,7 @@ class Converter
           orgaantype = RDF::URI.new(bestuursorgaan_iri)
           orgaan = mdb.bestuursorgaan_voor_gemeentenaam(gemeentenaam, orgaantype, orgaan_start_datum )
           date =  Date.strptime(row["datum"], input_date_format)
+
           if verkiezing_cache[orgaan]
             verkiezing = verkiezing_cache[orgaan]
           else
@@ -530,6 +531,9 @@ class Converter
   end
 end
 
+handling_province = ENV['KANDIDATENLIJST_TYPE_IRI'] == "http://data.vlaanderen.be/id/concept/KandidatenlijstLijsttype/90e3b7d0-2fae-43a1-957e-6daa8d072be1"
+
+puts "Handling province: #{handling_province}"
 
 converter = Converter.new(
   endpoint: ENV["ENDPOINT"],
@@ -538,7 +542,7 @@ converter = Converter.new(
   transform_path: '/data/transforms/2025',
   input_date_format: ENV['INPUT_DATE_FORMAT'],
   log_level: ENV['LOG_LEVEL'],
-  provincie: false # only if we are parsing a provincielijst
+  provincie: handling_province # only if we are parsing a provincielijst
 )
 converter.run_data_transforms
 kieslijsten = converter.parse_kieslijsten(ENV['KANDIDATENLIJST_TYPE_IRI'], ENV['BESTUURSORGAAN_TYPE_IRI'], ENV['ORGAAN_START_DATUM'])
