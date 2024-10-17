@@ -347,6 +347,19 @@ class Converter
     end
   end
 
+  def find_first_voornaam(voornaam_csv, achternaam_csv, naam_stembiljet_csv)
+    if naam_stembiljet_csv.nil? || naam_stembiljet_csv.empty? || !naam_stembiljet_csv[achternaam_csv]
+      voornaam_csv
+    else
+      new_voornaam = naam_stembiljet_csv.gsub(achternaam_csv, "").strip
+      if new_voornaam.empty?
+        new_voornaam = voornaam_csv
+      end
+      log.debug "new voornaam: #{voornaam_csv} -> #{new_voornaam}"
+      new_voornaam
+    end
+  end
+
   def rangorde(row)
     if int(row['verkozen']) > 0
       Integer(row['verkozen'])
@@ -376,10 +389,20 @@ class Converter
         unless row['RRvoornaam']
           log.info "missing RRvoornaam for rrn: #{row["RR"]}, row: #{index}"
         end
+        unless row['naam stembiljet']
+          log.info "missing naam stembilject for rrn: #{row["RR"]}, row: #{index}"
+        end
+        voornaam_csv = row['RRvoornaam']
+        achternaam_csv = row['RRachternaam']
+        naam_stembiljet_csv = row['naam stembiljet']
+
+        voornaam_csv = find_first_voornaam(voornaam_csv, achternaam_csv, naam_stembiljet_csv)
+
         if persoon
           gegevens = mdb.fetch_person_details(persoon)
-          voornaam = gegevens[:voornaam] ? gegevens[:voornaam] : row['RRvoornaam']
-          achternaam = gegevens[:achternaam] ? gegevens[:achternaam] : row['RRachternaam']
+          voornaam = gegevens[:voornaam] ? gegevens[:voornaam] : voornaam_csv
+          achternaam = gegevens[:achternaam] ? gegevens[:achternaam] : achternaam_csv
+
           geslacht = gegevens[:geslacht] ? gegevens[:geslacht] : row['geslacht']
           geboortedatum = gegevens[:geboortedatum] ? gegevens[:geboortedatum] : geboortedatum
           uuid = gegevens[:uuid] ? gegevens[:uuid] : persoon.value.sub("#{::MandatenDb::BASE_IRI}/personen/","")
@@ -393,8 +416,8 @@ class Converter
         else
           #log.warn "creating persoon for rrn #{row['RR']}"
           ( persoon, triples, sensitive_triples ) = mdb.create_person( identifier: identifier,
-                                                                       voornaam: row['RRvoornaam'],
-                                                                       achternaam: row['RRachternaam'],
+                                                                       voornaam: voornaam_csv,
+                                                                       achternaam: achternaam_csv,
                                                                        geslacht: row['geslacht'],
                                                                        geboortedatum: geboortedatum
                                                                      )

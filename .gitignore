@@ -2,5 +2,6 @@ data/output/*sensitive.ttl
 data/db/toLoad/*sensitive.ttl
 data/db/
 data/input*/kandidaten.csv
+data/input/2025*
 *~
 \#*\#
